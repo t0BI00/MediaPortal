@@ -125,7 +125,7 @@ class m4kGenreScreen(Screen):
 			self.genreliste.append(("Letzte Updates (Serien)", "http://www.movie4k.to/tvshows_featured.php"))
 			self.genreliste.append(("Alle Filme A-Z", "FilmeAZ"))
 			self.genreliste.append(("Alle Serien A-Z", "SerienAZ"))
-			self.genreliste.append(("Suche", "http://www.movie4k.com/movies.php?list=search"))
+			self.genreliste.append(("Suche", "http://www.movie4k.to/movies.php?list=search"))
 			self.genreliste.append(("Abenteuer", "http://movie4k.to/movies-genre-4-"))
 			self.genreliste.append(("Action", "http://movie4k.to/movies-genre-1-"))
 			self.genreliste.append(('Biografie', 'http://movie4k.to/movies-genre-6-'))
@@ -178,7 +178,7 @@ class m4kGenreScreen(Screen):
 			self.session.open(m4kSerienABCAuswahl, streamGenreLink)
 		elif streamGenreName == "Alle Filme A-Z":
 			self.session.open(m4kSerienABCAuswahl, streamGenreLink)
-		elif streamGenreLink == 'http://www.movie4k.com/movies.php?list=search':
+		elif streamGenreLink == 'http://www.movie4k.to/movies.php?list=search':
 			self.streamGenreLink = streamGenreLink
 			self.session.openWithCallback(self.searchCallback, VirtualKeyBoard, title = (_("Suchbegriff eingeben")), text = " ")
 		elif streamGenreName == "Letzte Updates (XXX)":

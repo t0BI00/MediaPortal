@@ -114,6 +114,7 @@ class kxMain(Screen):
 		self.streamList.append((self.neueste_kino, "http://kinox.to"))
 		self.streamList.append((self.neueste_online, "http://kinox.to"))
 		self.streamList.append(("Kinofilme", "http://kinox.to/Cine-Films.html"))
+		self.streamList.append(("Suche", "dump"))
 		self.streamList.append(("Filme A-Z", "dump"))
 		self.streamList.append(("Serien A-Z","dump"))
 		self.streamList.append(("Neueste Serien", "http://kinox.to/Latest-Series.html"))
@@ -134,6 +135,8 @@ class kxMain(Screen):
 			self.session.open(kxNeuesteKino, url)
 		elif auswahl == self.neueste_online:
 			self.session.open(kxNeuesteOnline, url)
+		elif auswahl == "Suche":
+			self.session.openWithCallback(self.searchCallback, VirtualKeyBoard, title = (_("Suchbegriff eingeben")), text = " ")
 		elif auswahl == "Filme A-Z":
 			self.session.open(kxABC, url)
 		elif auswahl == "Serien A-Z":
@@ -143,6 +146,13 @@ class kxMain(Screen):
 		elif auswahl == "Watchlist":
 			self.session.open(kxWatchlist)
 			
+	def searchCallback(self, callbackStr):
+		if callbackStr is not None:
+			self.searchStr = callbackStr
+			url = "http://kinox.to/Search.html?q="
+			self.searchData = self.searchStr
+			self.session.open(kxSucheAlleFilmeListeScreen, url, self.searchData)
+					
 	def keyCancel(self):
 		self.close()
 
@@ -1590,5 +1600,142 @@ class kxParts(Screen):
 			sref.setName(streamname)
 			self.session.open(MoviePlayer, sref)
 			
+	def keyCancel(self):
+		self.close()
+			
+class kxSucheAlleFilmeListeScreen(Screen):
+	
+	def __init__(self, session, searchURL, searchData):
+		self.kxGotLink = searchURL + searchData
+		self.session = session
+		path = "/usr/lib/enigma2/python/Plugins/Extensions/MediaPortal/skins/%s/kxSucheFilme.xml" % config.mediaportal.skin.value
+		if not fileExists(path):
+			path = "/usr/lib/enigma2/python/Plugins/Extensions/MediaPortal/skins/original/kxSucheFilme.xml"
+		print path
+		with open(path, "r") as f:
+			self.skin = f.read()
+			f.close()
+			
+		Screen.__init__(self, session)
+
+		self["actions"]  = ActionMap(["OkCancelActions", "ShortcutActions", "EPGSelectActions", "WizardActions", "ColorActions", "NumberActions", "MenuActions", "MoviePlayerActions", "InfobarSeekActions"], {
+			"ok"    : self.keyOK,
+			"cancel": self.keyCancel,
+			"up" : self.keyUp,
+			"down" : self.keyDown,
+			"right" : self.keyRight,
+			"left" : self.keyLeft
+		}, -1)
+		
+		self.plugin_path = "/usr/lib/enigma2/python/Plugins/Extensions/MediaPortal"
+		
+		self['title'] = Label("Kinox.to")
+		self['leftContentTitle'] = Label("Suche nach Film")
+		self['stationIcon'] = Pixmap()
+		self['name'] = Label("")
+		self['handlung'] = Label("")
+		self.keckse = {}
+		
+		self.streamList = []
+		self.streamMenuList = MenuList([], enableWrapAround=True, content=eListboxPythonMultiContent)
+		self.streamMenuList.l.setFont(0, gFont('mediaportal', 23))
+		self.streamMenuList.l.setItemHeight(25)
+		self['streamlist'] = self.streamMenuList
+		
+		self.keyLocked = True
+		#self.page = 1
+		self.onLayoutFinish.append(self.loadPage)
+		
+	def loadPage(self):
+		self.streamList = []
+		# bitte stehen lassen das ist fuer die cover ansicht. aktuell gibt es aber den fehler 500 da stimmt was bei kinox.t nicht.
+		#url = "http://kinox.to/aSET/ListMode/cover"
+		#getPage(url, cookies=self.keckse, headers={'Content-Type':'application/x-www-form-urlencoded'}).addCallback(self.getKeckse).addErrback(self.dataError)
+		getPage(self.kxGotLink, cookies=self.keckse, headers={'Content-Type':'application/x-www-form-urlencoded'}).addCallback(self.parseData).addErrback(self.dataError)
+		
+	def getKeckse(self, data):
+		print self.keckse
+		getPage(self.kxGotLink, cookies=self.keckse, headers={'Content-Type':'application/x-www-form-urlencoded'}).addCallback(self.parseData).addErrback(self.dataError)
+		
+			
+	def parseData(self, data):
+		movies = re.findall('<td class="Icon"><img width="16" height="11" src="/gr/sys/lng/(.*?).png" alt="language"></td>.*?<td class="Title"><a href="(.*?)" onclick="return false;">(.*?)</a>', data, re.S)
+		if movies:
+			for (kxLang,kxUrl,kxTitle) in movies:
+				kxUrl = "http://kinox.to" + kxUrl
+				print kxTitle, kxUrl, kxLang
+				self.streamList.append((decodeHtml(kxTitle),kxUrl))
+				self.streamMenuList.setList(map(kxList2Entry, self.streamList))
+			self.keyLocked = False
+			self.showInfos()
+
+	def showInfos(self):
+		filmName = self['streamlist'].getCurrent()[0][0]
+		self['name'].setText(filmName)
+		url = self['streamlist'].getCurrent()[0][1]
+		print url
+		getPage(url, headers={'Content-Type':'application/x-www-form-urlencoded'}).addCallback(self.getDetails).addErrback(self.dataError)
+		
+	def getDetails(self, data):
+		details = re.findall('<div class="Grahpics">.*?<img src="(.*?)".*?<div class="Descriptore">(.*?)</div>', data, re.S)
+		if details:
+			for (image, handlung) in details:
+				print image
+				self['handlung'].setText(decodeHtml(handlung))
+				downloadPage(image, "/tmp/kxIcon.jpg").addCallback(self.showCover)
+
+	def showCover(self, picData):
+		if fileExists("/tmp/kxIcon.jpg"):
+			self['stationIcon'].instance.setPixmap(gPixmapPtr())
+			self.scale = AVSwitch().getFramebufferScale()
+			self.picload = ePicLoad()
+			size = self['stationIcon'].instance.size()
+			self.picload.setPara((size.width(), size.height(), self.scale[0], self.scale[1], False, 1, "#FF000000"))
+			if self.picload.startDecode("/tmp/kxIcon.jpg", 0, 0, False) == 0:
+				ptr = self.picload.getData()
+				if ptr != None:
+					self['stationIcon'].instance.setPixmap(ptr)
+					self['stationIcon'].show()
+					del self.picload
+					
+	def dataError(self, error):
+		print error
+			
+	def keyOK(self):
+		exist = self['streamlist'].getCurrent()
+		if self.keyLocked or exist == None:
+			return
+		stream_name = self['streamlist'].getCurrent()[0][0]
+		auswahl = self['streamlist'].getCurrent()[0][1]
+		print auswahl
+		# TODO: Anpassungen fuer Serien vornehmen
+		# self.session.open(kxEpisoden, auswahl, stream_name)
+		self.session.open(kxStreams, auswahl, stream_name)
+
+
+	def keyLeft(self):
+		if self.keyLocked:
+			return
+		self['streamlist'].pageUp()
+		self.showInfos()
+		
+	def keyRight(self):
+		if self.keyLocked:
+			return
+		self['streamlist'].pageDown()
+		self.showInfos()
+		
+	def keyUp(self):
+		if self.keyLocked:
+			return
+		self['streamlist'].up()
+		self.showInfos()
+		
+	def keyDown(self):
+		if self.keyLocked:
+			return
+		self['streamlist'].down()
+		self.showInfos()
+		
 	def keyCancel(self):
 		self.close()

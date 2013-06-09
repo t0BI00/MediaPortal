@@ -1630,7 +1630,7 @@ class kxSucheAlleFilmeListeScreen(Screen):
 		self.plugin_path = "/usr/lib/enigma2/python/Plugins/Extensions/MediaPortal"
 		
 		self['title'] = Label("Kinox.to")
-		self['leftContentTitle'] = Label("Suche nach Film")
+		self['leftContentTitle'] = Label("Suche nach Filmen")
 		self['stationIcon'] = Pixmap()
 		self['name'] = Label("")
 		self['handlung'] = Label("")
@@ -1664,7 +1664,7 @@ class kxSucheAlleFilmeListeScreen(Screen):
 			for (kxLang,kxUrl,kxTitle) in movies:
 				kxUrl = "http://kinox.to" + kxUrl
 				print kxTitle, kxUrl, kxLang
-				self.streamList.append((decodeHtml(kxTitle),kxUrl))
+				self.streamList.append((decodeHtml(kxTitle),kxUrl, kxLang))
 				self.streamMenuList.setList(map(kxList2Entry, self.streamList))
 			self.keyLocked = False
 			self.showInfos()
@@ -1709,7 +1709,9 @@ class kxSucheAlleFilmeListeScreen(Screen):
 		auswahl = self['streamlist'].getCurrent()[0][1]
 		print auswahl
 		# TODO: Anpassungen fuer Serien vornehmen
-		# self.session.open(kxEpisoden, auswahl, stream_name)
+		# theoretisch kann man kxEpisoden und kxStream hintereinander ausführen, aber dies führt zu unschönen effekten
+		# Daher besser unterscheiden was Serien und Filme sind und dann die entsprechenden Klassen aufrufen
+		#self.session.open(kxEpisoden, auswahl, stream_name))
 		self.session.open(kxStreams, auswahl, stream_name)
 
 

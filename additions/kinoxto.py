@@ -1709,7 +1709,7 @@ class kxSucheAlleFilmeListeScreen(Screen):
 		auswahl = self['streamlist'].getCurrent()[0][1]
 		print auswahl
 		# TODO: Anpassungen fuer Serien vornehmen
-		# theoretisch kann man kxEpisoden und kxStream hintereinander ausführen, aber dies führt zu unschönen effekten
+		# theoretisch kann man kxEpisoden und kxStream hintereinander ausfuehren, aber dies fuehrt zu unschoenen effekten
 		# Daher besser unterscheiden was Serien und Filme sind und dann die entsprechenden Klassen aufrufen
 		#self.session.open(kxEpisoden, auswahl, stream_name))
 		self.session.open(kxStreams, auswahl, stream_name)

@@ -1608,9 +1608,9 @@ class kxSucheAlleFilmeListeScreen(Screen):
 	def __init__(self, session, searchURL, searchData):
 		self.kxGotLink = searchURL + searchData
 		self.session = session
-		path = "/usr/lib/enigma2/python/Plugins/Extensions/MediaPortal/skins/%s/kxSucheFilme.xml" % config.mediaportal.skin.value
+		path = "/usr/lib/enigma2/python/Plugins/Extensions/MediaPortal/skins/%s/kxKino.xml" % config.mediaportal.skin.value
 		if not fileExists(path):
-			path = "/usr/lib/enigma2/python/Plugins/Extensions/MediaPortal/skins/original/kxSucheFilme.xml"
+			path = "/usr/lib/enigma2/python/Plugins/Extensions/MediaPortal/skins/original/kxKino.xml"
 		print path
 		with open(path, "r") as f:
 			self.skin = f.read()
